@@ -3,9 +3,8 @@ set -euo pipefail
 
 ROOT="$(pwd)"
 EVIDENCE="$ROOT/evidence"
-JENKINS_HOME_HOST="$RUNNER_TEMP/jenkins-home"
 INIT_DIR="$RUNNER_TEMP/jenkins-init"
-mkdir -p "$EVIDENCE/screenshots" "$INIT_DIR" "$JENKINS_HOME_HOST"
+mkdir -p "$EVIDENCE/screenshots" "$INIT_DIR"
 
 cat > "$RUNNER_TEMP/Dockerfile.jenkins" <<'DOCKERFILE'
 FROM jenkins/jenkins:lts-jdk21
@@ -43,11 +42,10 @@ job.save()
 instance.save()
 GROOVY
 
-docker run -d --rm --name jenkins-lab-cloud \
+docker run -d --name jenkins-lab-cloud \
   -p 127.0.0.1:8080:8080 \
   -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false" \
   -v "$INIT_DIR:/usr/share/jenkins/ref/init.groovy.d:ro" \
-  -v "$JENKINS_HOME_HOST:/var/jenkins_home" \
   -v "$ROOT/Jenkinsfile:/tmp/Jenkinsfile:ro" \
   jenkins-lab-cloud
 
@@ -58,7 +56,11 @@ for attempt in $(seq 1 90); do
   sleep 4
 done
 if [ "$READY" -ne 1 ]; then
-  docker logs jenkins-lab-cloud
+  if docker inspect jenkins-lab-cloud >/dev/null 2>&1; then
+    docker logs jenkins-lab-cloud || true
+  else
+    echo "Jenkins container exited before health check; container was removed by Docker."
+  fi
   exit 1
 fi
 sleep 5
@@ -144,5 +146,4 @@ await browser.close();
 NODE
 node "$RUNNER_TEMP/capture-jenkins.mjs"
 
-docker logs jenkins-lab-cloud > "$EVIDENCE/jenkins-startup.log" 2>&1
 docker stop jenkins-lab-cloud
