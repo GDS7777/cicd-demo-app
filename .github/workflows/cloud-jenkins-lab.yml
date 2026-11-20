@@ -6,7 +6,7 @@ on:
     paths:
       - 'Jenkinsfile'
       - 'scripts/cloud_jenkins_lab.sh'
-      - '.github/workflows/cloud-jenkins-lab.yml'
+      - 'scripts/create_jenkins_report.py'
   workflow_dispatch:
 
 permissions:
@@ -16,13 +16,13 @@ jobs:
   jenkins-pipeline:
     name: Run real Jenkins pipeline on cloud Ubuntu
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out the fork
         uses: actions/checkout@v4
-      - name: Run Jenkins and the four required builds
+      - name: Run Jenkins, four builds, screenshots, and Word report
         run: bash scripts/cloud_jenkins_lab.sh
-      - name: Save Jenkins logs, artifacts, and real UI screenshots
+      - name: Save report, rendered pages, logs, and real UI screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
