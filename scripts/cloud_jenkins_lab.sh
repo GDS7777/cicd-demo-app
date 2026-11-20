@@ -129,7 +129,7 @@ printf 'Jenkins URL: %s\nDocker image digest: %s\n' "$JENKINS_URL" "$(cat "$EVID
 
 npm install --no-save playwright
 npx playwright install --with-deps chromium
-cat > "$RUNNER_TEMP/capture-jenkins.mjs" <<'NODE'
+cat > "$ROOT/capture-jenkins.mjs" <<'NODE'
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 const base = 'http://127.0.0.1:8080';
@@ -153,6 +153,6 @@ await page.waitForTimeout(500);
 await page.screenshot({ path: out + '/build-' + numbers[3] + '-artifacts.png' });
 await browser.close();
 NODE
-node "$RUNNER_TEMP/capture-jenkins.mjs"
+node "$ROOT/capture-jenkins.mjs"
 
 docker stop jenkins-lab-cloud
