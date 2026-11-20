@@ -96,11 +96,12 @@ run_build() {
   done
   RESULT="$(curl -fsS "$JENKINS_URL/job/JenkinsLab/$BUILD_NUMBER/api/json?tree=result" | jq -r '.result')"
   printf '%s\n' "$STATE" > "$EVIDENCE/build-$BUILD_NUMBER-status.json"
-  curl -fsS "$JENKINS_URL/job/JenkinsLab/$BUILD_NUMBER/consoleText" > "$EVIDENCE/build-$BUILD_NUMBER-console.txt"
-  printf 'build=%s branch=%s tests=%s result=%s\n' "$BUILD_NUMBER" "$EXPECTED_BRANCH" "$EXPECTED_TESTS" "$RESULT" | tee -a "$EVIDENCE/build-matrix.txt"
+  curl -gfsS "$JENKINS_URL/job/JenkinsLab/$BUILD_NUMBER/consoleText" > "$EVIDENCE/build-$BUILD_NUMBER-console.txt"
+  printf 'build=%s branch=%s tests=%s result=%s\n' "$BUILD_NUMBER" "$EXPECTED_BRANCH" "$EXPECTED_TESTS" "$RESULT" | tee -a "$EVIDENCE/build-matrix.txt" >&2
   if [ "$RESULT" != "$EXPECTED_RESULT" ]; then
-    echo "Expected $EXPECTED_RESULT but received $RESULT for build $BUILD_NUMBER"
-    exit 1
+    echo "Expected $EXPECTED_RESULT but received $RESULT for build $BUILD_NUMBER" >&2
+    tail -n 100 "$EVIDENCE/build-$BUILD_NUMBER-console.txt" >&2
+    return 1
   fi
   if [ "$RESULT" = "SUCCESS" ]; then
     curl -fsS "$JENKINS_URL/job/JenkinsLab/$BUILD_NUMBER/artifact/app.tar.gz" -o "$EVIDENCE/app-$BUILD_NUMBER.tar.gz"
