@@ -54,16 +54,12 @@ for style_name in ("Heading 1", "Heading 2", "Title", "Subtitle"):
 doc.styles["Heading 1"].font.size = Pt(14)
 doc.styles["Heading 2"].font.size = Pt(12)
 
-header = section.header.paragraphs[0]
-header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-set_run(header.add_run("Практическая работа № 2. Jenkins"), 9)
+section.different_first_page_header_footer = True
+section.first_page_header.paragraphs[0].text = ""
+section.first_page_footer.paragraphs[0].text = ""
+section.header.paragraphs[0].text = ""
 footer = section.footer.paragraphs[0]
 footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-set_run(footer.add_run("Облачный прогон GitHub Actions и Jenkins | "), 9)
-field_run = footer.add_run()
-set_run(field_run, 9)
-fld = field_run._r
-begin = fld.get_or_add_rPr()
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 page_field = OxmlElement("w:fldSimple")
@@ -126,31 +122,41 @@ for key in ("B1", "B2", "B3", "B4"):
     if found:
         sha_by_build[key] = found[-1]
 
-# 1. Cover
+# 1. Титульный лист
+for line in (
+    "МИНИСТЕРСТВО ОБРАЗОВАНИЯ И НАУКИ РОССИЙСКОЙ ФЕДЕРАЦИИ",
+    "Федеральное государственное бюджетное образовательное учреждение высшего образования",
+    "САМАРСКИЙ ГОСУДАРСТВЕННЫЙ ТЕХНИЧЕСКИЙ УНИВЕРСИТЕТ",
+    "Кафедра «Информатика и вычислительная техника»",
+):
+    paragraph(line, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER, size=12)
 p = doc.add_paragraph()
 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-p.paragraph_format.space_before = Pt(75)
-set_run(p.add_run("ОТЧЁТ"), 18, True)
+p.paragraph_format.space_before = Pt(42)
+set_run(p.add_run("ОТЧЁТ"), 16, True)
+paragraph("о выполнении лабораторной работы № 2", align=WD_ALIGN_PARAGRAPH.CENTER, size=13)
 p = doc.add_paragraph()
 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-set_run(p.add_run("по практической работе № 2"), 16, True)
+p.paragraph_format.space_before = Pt(12)
+set_run(p.add_run("Создание CI/CD Pipeline в Jenkins"), 14, True)
+paragraph("по дисциплине «Администрирование информационных систем»", align=WD_ALIGN_PARAGRAPH.CENTER, size=12)
+for line in (
+    "Проверяющий: Сидельников Александр Андреевич",
+    "Проверяющий: Алексеев Дмитрий Валентинович",
+    "Выполнил: Волков Сергей Николаевич",
+):
+    paragraph(line, align=WD_ALIGN_PARAGRAPH.RIGHT, size=12)
 p = doc.add_paragraph()
 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-p.paragraph_format.space_before = Pt(25)
-set_run(p.add_run("Создание CI/CD Pipeline в Jenkins"), 16, True)
-paragraph("Параметризованная сборка проекта cicd-demo-app", align=WD_ALIGN_PARAGRAPH.CENTER, size=13)
-paragraph("Облачная среда: Ubuntu runner и одноразовый контейнер Jenkins", align=WD_ALIGN_PARAGRAPH.CENTER, size=12)
-p = doc.add_paragraph()
-p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-p.paragraph_format.space_before = Pt(90)
-set_run(p.add_run("GitHub: GDS7777/cicd-demo-app"), 12)
-paragraph("20 ноября 2026 года", align=WD_ALIGN_PARAGRAPH.CENTER, size=12)
+p.paragraph_format.space_before = Pt(46)
+set_run(p.add_run("Самара, 07.11.2026"), 12)
 
 # 2. Assignment and goal
 new_page("1. Цель и содержание работы")
 paragraph("Цель работы — настроить декларативный Jenkins Pipeline, который получает исходный код из заданного GitHub-репозитория и ветки, проверяет структуру проекта, при необходимости запускает unit-тесты, формирует архив app.tar.gz и сохраняет его как артефакт сборки.")
 paragraph("В job добавлены параметры REPO_URL, GIT_BRANCH и RUN_TESTS. В отчёте проверены четыре сценария: успешная сборка master с тестами, успешная сборка master без тестов, ожидаемый отказ на ветке broken-tests и повторная успешная сборка master.")
 paragraph("Работа выполнялась на облачном Ubuntu runner GitHub Actions. Внутри runner был запущен официальный контейнер Jenkins. Команды и сборки выполнены в этой изолированной среде; виртуальная машина на компьютере пользователя не использовалась.")
+paragraph("Фактическая дата облачных запусков: 20.11.2026. Дата на титульном листе указана по просьбе автора отчёта.")
 paragraph("Успешным считается результат, при котором все обязательные файлы найдены, тесты проходят или корректно пропущены, архив формируется и доступен со страницы сборки. При ошибке тестов последующие стадии Build и Archive должны быть пропущены.")
 
 # 3. Environment
