@@ -64,7 +64,7 @@ if [ "$READY" -ne 1 ]; then
   exit 1
 fi
 sleep 5
-curl -fsS "$JENKINS_URL/job/JenkinsLab/api/json?tree=name,buildable,property[parameterDefinitions[name,type,defaultParameterValue[value]]]" \
+curl -gfsS "$JENKINS_URL/job/JenkinsLab/api/json?tree=name,buildable,property[parameterDefinitions[name,type,defaultParameterValue[value]]]" \
   > "$EVIDENCE/job-configuration.json"
 
 run_build() {
