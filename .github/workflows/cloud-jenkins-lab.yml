@@ -1,0 +1,32 @@
+name: Cloud Jenkins lab
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'Jenkinsfile'
+      - 'scripts/cloud_jenkins_lab.sh'
+      - '.github/workflows/cloud-jenkins-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  jenkins-pipeline:
+    name: Run real Jenkins pipeline on cloud Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the fork
+        uses: actions/checkout@v4
+      - name: Run Jenkins and the four required builds
+        run: bash scripts/cloud_jenkins_lab.sh
+      - name: Save Jenkins logs, artifacts, and real UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jenkins-cloud-evidence
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
