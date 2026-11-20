@@ -70,6 +70,10 @@ fi
 sleep 5
 curl -gfsS "$JENKINS_URL/job/JenkinsLab/api/json?tree=name,buildable,property[parameterDefinitions[name,type,defaultParameterValue[value]]]" \
   > "$EVIDENCE/job-configuration.json"
+docker exec jenkins-lab-cloud sh -c 'cat /etc/os-release; python3 --version; tar --version | head -1; java -version 2>&1 | head -1' \
+  > "$EVIDENCE/jenkins-agent-environment.txt"
+printf 'GitHub Actions run ID: %s\nSource commit: %s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" \
+  > "$EVIDENCE/execution-metadata.txt"
 
 run_build() {
   EXPECTED_BRANCH="$1"
@@ -138,19 +142,36 @@ const numbers = fs.readFileSync(process.cwd() + '/evidence/build-numbers.env', '
   .match(/B[1-4]=(\d+)/g).map(x => x.split('=')[1]);
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+await page.goto(base + '/job/JenkinsLab/configure', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(1000);
+await page.screenshot({ path: out + '/jenkins-job-parameters.png' });
 await page.goto(base + '/job/JenkinsLab/', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
 await page.screenshot({ path: out + '/jenkins-stage-history.png' });
 for (let i = 0; i < numbers.length; i++) {
   const n = numbers[i];
+  await page.goto(base + '/job/JenkinsLab/' + n + '/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: out + '/build-' + n + '-summary.png' });
   await page.goto(base + '/job/JenkinsLab/' + n + '/console', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(500);
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   await page.screenshot({ path: out + '/build-' + n + '-console.png' });
 }
-await page.goto(base + '/job/JenkinsLab/' + numbers[3] + '/artifact/', { waitUntil: 'domcontentloaded' });
-await page.waitForTimeout(500);
-await page.screenshot({ path: out + '/build-' + numbers[3] + '-artifacts.png' });
+for (const n of [numbers[0], numbers[1], numbers[3]]) {
+  await page.goto(base + '/job/JenkinsLab/' + n + '/artifact/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: out + '/build-' + n + '-artifacts.png' });
+}
+await page.goto('https://github.com/GDS7777/cicd-demo-app', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(1000);
+await page.screenshot({ path: out + '/github-fork-master.png' });
+await page.goto('https://github.com/GDS7777/cicd-demo-app/tree/broken-tests', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(1000);
+await page.screenshot({ path: out + '/github-broken-tests-branch.png' });
+await page.goto('https://github.com/GDS7777/cicd-demo-app/blob/master/Jenkinsfile', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(1000);
+await page.screenshot({ path: out + '/github-jenkinsfile.png' });
 await browser.close();
 NODE
 node "$ROOT/capture-jenkins.mjs"
