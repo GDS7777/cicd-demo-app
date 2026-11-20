@@ -176,4 +176,20 @@ await browser.close();
 NODE
 node "$ROOT/capture-jenkins.mjs"
 
+cp Jenkinsfile "$EVIDENCE/Jenkinsfile"
+cp scripts/cloud_jenkins_lab.sh "$EVIDENCE/cloud_jenkins_lab.sh"
+python3 -m venv "$RUNNER_TEMP/report-venv"
+"$RUNNER_TEMP/report-venv/bin/pip" install --disable-pip-version-check python-docx
+"$RUNNER_TEMP/report-venv/bin/python" scripts/create_jenkins_report.py
+sudo apt-get -qq update
+sudo apt-get -qq install -y --no-install-recommends libreoffice-writer poppler-utils
+mkdir -p "$EVIDENCE/render"
+libreoffice --headless --convert-to pdf --outdir "$EVIDENCE/render" "$EVIDENCE/report.docx"
+PAGE_COUNT="$(pdfinfo "$EVIDENCE/render/report.pdf" | awk '/^Pages:/ {print $2}')"
+printf 'Rendered report pages: %s\\n' "$PAGE_COUNT" | tee "$EVIDENCE/render/page-count.txt"
+if [ "$PAGE_COUNT" != "15" ]; then
+  echo "Expected a 15-page report; rendered $PAGE_COUNT pages."
+  exit 1
+fi
+pdftoppm -png -r 85 "$EVIDENCE/render/report.pdf" "$EVIDENCE/render/page"
 docker stop jenkins-lab-cloud
