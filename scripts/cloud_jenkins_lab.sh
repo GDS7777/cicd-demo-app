@@ -28,6 +28,7 @@ def instance = Jenkins.get()
 instance.setNumExecutors(3)
 instance.setSecurityRealm(SecurityRealm.NO_AUTHENTICATION)
 instance.setAuthorizationStrategy(AuthorizationStrategy.UNSECURED)
+instance.setCrumbIssuer(null)
 def existing = instance.getItem('JenkinsLab')
 def job = existing == null ? instance.createProject(WorkflowJob, 'JenkinsLab') : existing
 def script = new File('/tmp/Jenkinsfile').getText('UTF-8')
@@ -72,7 +73,11 @@ run_build() {
   EXPECTED_TESTS="$2"
   EXPECTED_RESULT="$3"
   PREVIOUS="$4"
-  curl -fsS -X POST "$JENKINS_URL/job/JenkinsLab/buildWithParameters?REPO_URL=https%3A%2F%2Fgithub.com%2FGDS7777%2Fcicd-demo-app.git&GIT_BRANCH=$EXPECTED_BRANCH&RUN_TESTS=$EXPECTED_TESTS"
+  if ! curl -gfsS -X POST "$JENKINS_URL/job/JenkinsLab/buildWithParameters?REPO_URL=https%3A%2F%2Fgithub.com%2FGDS7777%2Fcicd-demo-app.git&GIT_BRANCH=$EXPECTED_BRANCH&RUN_TESTS=$EXPECTED_TESTS" >/dev/null; then
+    echo "Jenkins rejected the build request for $EXPECTED_BRANCH / RUN_TESTS=$EXPECTED_TESTS" >&2
+    docker logs jenkins-lab-cloud || true
+    return 1
+  fi
   BUILD_NUMBER=""
   for attempt in $(seq 1 90); do
     BUILD_NUMBER="$(curl -gfsS "$JENKINS_URL/job/JenkinsLab/api/json?tree=lastBuild[number]" | jq -r '.lastBuild.number // empty')"
@@ -103,10 +108,10 @@ run_build() {
   echo "$BUILD_NUMBER"
 }
 
-B1="$(run_build master true SUCCESS 0)"
-B2="$(run_build master false SUCCESS "$B1")"
-B3="$(run_build broken-tests true FAILURE "$B2")"
-B4="$(run_build master true SUCCESS "$B3")"
+B1="$(run_build master true SUCCESS 0)" || exit 1
+B2="$(run_build master false SUCCESS "$B1")" || exit 1
+B3="$(run_build broken-tests true FAILURE "$B2")" || exit 1
+B4="$(run_build master true SUCCESS "$B3")" || exit 1
 
 grep -Eqi 'skipped.*Test|Test.*skipped|when conditional' "$EVIDENCE/build-$B2-console.txt"
 grep -Eqi 'FAILED|failures=1|was not equal' "$EVIDENCE/build-$B3-console.txt"
