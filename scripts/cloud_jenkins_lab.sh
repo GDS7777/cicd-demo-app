@@ -8,6 +8,9 @@ mkdir -p "$EVIDENCE/screenshots" "$INIT_DIR"
 
 cat > "$RUNNER_TEMP/Dockerfile.jenkins" <<'DOCKERFILE'
 FROM jenkins/jenkins:lts-jdk21
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends python3 tar && rm -rf /var/lib/apt/lists/*
+USER jenkins
 RUN jenkins-plugin-cli --plugins "git workflow-aggregator pipeline-stage-view"
 DOCKERFILE
 
