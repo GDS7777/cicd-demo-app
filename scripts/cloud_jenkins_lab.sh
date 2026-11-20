@@ -75,7 +75,7 @@ run_build() {
   curl -fsS -X POST "$JENKINS_URL/job/JenkinsLab/buildWithParameters?REPO_URL=https%3A%2F%2Fgithub.com%2FGDS7777%2Fcicd-demo-app.git&GIT_BRANCH=$EXPECTED_BRANCH&RUN_TESTS=$EXPECTED_TESTS"
   BUILD_NUMBER=""
   for attempt in $(seq 1 90); do
-    BUILD_NUMBER="$(curl -fsS "$JENKINS_URL/job/JenkinsLab/api/json?tree=lastBuild[number]" | jq -r '.lastBuild.number // empty')"
+    BUILD_NUMBER="$(curl -gfsS "$JENKINS_URL/job/JenkinsLab/api/json?tree=lastBuild[number]" | jq -r '.lastBuild.number // empty')"
     if [ -n "$BUILD_NUMBER" ] && [ "$BUILD_NUMBER" -gt "$PREVIOUS" ]; then break; fi
     sleep 2
   done
